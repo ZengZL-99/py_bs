@@ -1,11 +1,15 @@
+from operator import or_
+import json
 from flask import Blueprint, make_response, request
 from flask_cors import CORS
 from app.meituan.meituan_move_info import MeiTuan_Move
-from app.Model.models import MeiTuan_Move_Info
+from app.Model.models import MeiTuan_Move_Info as MT
 from app.exts import db
 from app.Model.models import User  # type:User
 from app.Global import CATEGORIES_ID_DATA, AREA_DATA
+from app.utils.message import response_info
 
+# from app.utils import props_with
 api = Blueprint("api", __name__)
 
 CORS(api, supports_credentials=True)
@@ -59,7 +63,7 @@ def meituan_move():
 @api.route("/query_mt")
 def query_mt():
     if request.method == "GET":
-        mt_info = MeiTuan_Move_Info.query.all()
+        mt_info = MT.query.all()
         data = []
         for info in mt_info:
             data.append({"name": info.name, "id": info.mid})
@@ -68,11 +72,18 @@ def query_mt():
 
 @api.route("/test")
 def test():
-    meituan = MeiTuan_Move_Info(name="火锅店", addr="北京市", areaName="天河", poiId=1101,
-                                phone="17817780995", shop_url="http://www.baidu.com", datetime=16000415541)
-    db.session.add(meituan)
+    db.create_all()
+    # meituan = MeiTuan_Move_Info(name="火锅店001", addr="北京市", areaName="天河", poiId=1101,
+    #                             phone="17817780995", shop_url="http://www.baidu.com", datetime=160004141,
+    #                             lat=27.234145, lng=26.23465811, markNumbers=2166, mallId=84518979, brandId=2883377, brandName="如轩砂锅粥"
+    #                             )
+    # db.session.add(meituan)
+    up = MT.query.filter(MT.poiId == "1730739").first()
+    print("结果", up.poiId)
+    up.poiId = 111122
+
     db.session.commit()
-    return "插入成功"
+    return "成功查询"
 
 
 # 类目数据
@@ -115,11 +126,11 @@ def area_data():
             "children": []
         }
         for r in i.get("region"):
-            region_id = r.get("areaId")
+            # region_id = r.get("areaId")
             region_name = r.get("regionName")
             info.get("children").append(
                 {
-                    "value": region_id,
+                    "value": region_name,
                     "label": region_name
                 }
             )
@@ -130,10 +141,42 @@ def area_data():
     }
 
 
+# 查询结果
+@api.route("/handleSelect")
+def handle_select():
+    if request.method == "GET":
+        query_list = []
+        select_dict = dict(request.args)
+        for v in select_dict.values():
+            query_list.append(v)
+        result = MT.query.filter(MT.areaName.in_(query_list)).all()
+        result_list = []
+        for r in result:
+            result_list.append(
+                {
+                    "name": r.name,
+                    "addr": r.addr,
+                    "shopUrl": r.shop_url,
+                    "poiId": r.poiId,
+                }
+            )
+        return response_info(msg="1", data=result_list)
+    return response_info(msg="2")
+
+
 @api.route("/test_user")
 def test_user():
-    user = User()
-    user.name = "www"
-    db.session.add(user)
-    db.session.commit()
-    return "添加成功？"
+    # user = User()
+    # user.name = "www"
+    # db.session.add(user)
+    query_list = ['www', 'zzl']
+    result = User.query.filter(User.name.in_(query_list)).all()
+    result_info = []
+    for r in result:
+        result_info.append({
+            "id": r.id,
+            "name": r.name
+        })
+    return {
+        "data": result_info
+    }
