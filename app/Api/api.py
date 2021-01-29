@@ -75,6 +75,7 @@ def query_mt():
 # 类目数据
 @api.route("/categories_data")
 def categories():
+    db.create_all()
     data = []
     for i in CATEGORIES_ID_DATA:
         # 判断ID是否为0或者-1 这两个类目为空
@@ -169,12 +170,12 @@ def get_lat_lng():
         query_list = ["嘉禾望岗", "江高镇", "永泰", "白云区", "白云国际机场", "白云大道沿线",
                       "白云绿地中心",
                       "百信广场",
-                      "石井",
-                      "罗冲围/金沙洲",
-                      "钟落潭",
-                      "黄石",
-                      "黄边",
-                      "龙归镇"]
+                      "石井"]
+        # "罗冲围/金沙洲",
+        # "钟落潭",
+        # "黄石",
+        # "黄边",
+        # "龙归镇"]
         result = MT.query.filter(MT.areaName.in_(query_list)).all()
         # result = MT.query.all()
         result_list = {
@@ -194,7 +195,7 @@ def get_lat_lng():
         }
         for r in result:
             result_list.get("info").get("result").get("data")[0].get("bound").append(
-                [str(int(float(r.lng) * 100000)), str(int(float(r.lat) * 100000)), "1"]
+                [str(int(float(r.lng) * 100000)), str(int(float(r.lat) * 100000)), str(random.randint(1, 10))]
             )
             # result_list.append(
             #     {
@@ -210,6 +211,35 @@ def get_lat_lng():
         return result_list
         # return response_info(msg="1", data=result_list)
     return response_info(msg="2")
+
+
+@api.route("/get_lat_lng_v2")
+def get_lat_lng_v2():
+    if request.method == "GET":
+        query_list = ["嘉禾望岗", "江高镇", "永泰", "白云区", "白云国际机场", "白云大道沿线",
+                      "白云绿地中心",
+                      "百信广场",
+                      "石井"]
+        # "罗冲围/金沙洲",
+        # "钟落潭",
+        # "黄石",
+        # "黄边",
+        # "龙归镇"]
+        result = MT.query.filter(MT.areaName.in_(BAIYUN_AREA)).all()
+        result_list = []
+        for r in result:
+            result_list.append(
+                {
+                    "geometry": {
+                        "type": 'Point',
+                        "coordinates": [float(r.lng), float(r.lat)]
+                    },
+                    "properties": {
+                        "count": random.randint(1, 40)
+                    }
+                }
+            )
+        return response_info(msg="1", data=result_list)
 
 
 # 把异步请求的数据封装成自己的
