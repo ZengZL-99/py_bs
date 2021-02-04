@@ -1,7 +1,7 @@
 from operator import or_
 import json
 import requests as req
-from flask import Blueprint, make_response, request
+from flask import Blueprint, make_response, request, url_for, redirect
 from flask_cors import CORS
 from app.meituan.meituan_move_info import MeiTuan_Move
 from app.Model.models import MeiTuan_Move_Info as MT
@@ -10,6 +10,7 @@ from app.Model.models import User  # type:User
 from app.Global import CATEGORIES_ID_DATA, AREA_DATA, BAIYUN_AREA
 from app.utils.message import response_info
 import random
+import base64
 
 # from app.utils import props_with
 api = Blueprint("api", __name__)
@@ -148,7 +149,7 @@ def handle_select():
         print("select_字典:", select_dict)
         for v in select_dict.values():
             query_list.append(v)
-        result = MT.query.filter(MT.areaName.in_(query_list)).all()
+        result = MT.query.filter(MT.areaName.in_(query_list)).filter(MT.addr.like(f"%{query_list[-1]}%")).all()
         result_list = []
         for r in result:
             result_list.append(
@@ -240,6 +241,7 @@ def get_lat_lng_v2():
                 }
             )
         return response_info(msg="1", data=result_list)
+    return response_info(msg="2")
 
 
 # 把异步请求的数据封装成自己的
@@ -257,3 +259,11 @@ def beijing():
         beijing = req.get("https://mapv.baidu.com/gl/examples/static/beijing.07102610.json").json()
         # print(beijing)
         return {"code": 200, "info": beijing}
+
+    return response_info(msg="2")
+
+
+@api.route("/logo")
+def logo():
+    if request.method == "GET":
+        return redirect("/static/再芮Logo.png")

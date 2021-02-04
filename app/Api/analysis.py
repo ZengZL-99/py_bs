@@ -1,6 +1,7 @@
 from flask import Blueprint, make_response, request  # type:request
 from flask_cors import CORS  # type: CORS
-from app.Model.models import MeiTuan_Move_Info as MT
+# from app.Model.models import MeiTuan_Move_Info as MT
+from app.Model.models import MeiTuan_Move_Info_V2 as MT
 from app.utils.message import response_info
 from app.Global import CATEGORIES_ID_DATA, AREA_DATA, BAIYUN_AREA
 import pandas as pd  # type: pd
@@ -36,8 +37,8 @@ def aly_pie():
         data = []
         for k, v in df1.items():
             data.append({
-                "areaName": k,
-                "count": v
+                "value": int(v),
+                "name": k
             })
         return response_info(msg="1", data=data)
     return response_info(msg="2")
@@ -103,4 +104,71 @@ def aly_brand():
         group_brand = df.groupby(by=["品牌ID"])["品牌ID"].count()
 
         return response_info(msg="1")
+    return response_info(msg="2")
+
+
+# 手机号为空的商家
+@analysis.route("/aly_phone")
+def aly_phone():
+    if request.method == "GET":
+        result = MT.query.filter(MT.areaName.in_(BAIYUN_AREA))
+        query_list = []
+        for r in result:
+            query_list.append(
+                {
+                    "phone": r.phone,
+                    "区域名称": r.areaName
+                }
+            )
+        df = pd.DataFrame(query_list)
+
+        def filter_phone(data):
+            if data['phone'] == "00000000":
+                return 0
+            else:
+                return 1
+
+        df['phone'] = df.apply(filter_phone, axis=1)
+        group_phone = df.groupby(by=["phone"])['phone'].count().to_list()
+        # print("有手机号与无手机号的商检占比", group_phone.to_list())
+        data_list = [
+            {
+                "nullPhone": group_phone[0]
+            },
+            {
+                "existPhone": group_phone[1]
+            }
+        ]
+        return response_info(msg="1", data=data_list)
+    return response_info(msg="2")
+
+
+@analysis.route("/group_score")
+def group_avg_score():
+    if request.method == "GET":
+        result = MT.query.filter(MT.areaName.in_(BAIYUN_AREA))
+        query_list = []
+        for r in result:
+            query_list.append(
+                {
+                    "score": round(float(r.avgscore)),
+                    "区域名称": r.areaName
+                }
+            )
+        df = pd.DataFrame(query_list)
+
+        def filter_score(data):
+            level = data['score']
+            return level
+        df['score'] = df.apply(filter_score, axis=1)
+        group_score = df.groupby(by=['score'])['score'].count().to_dict()
+        data_list = []
+        for k, v in group_score.items():
+            if int(k) != 0:
+                data_list.append({
+                    'value': int(v),
+                    'name': str(k) + "分"
+                })
+        print(data_list)
+        return response_info(msg="1", data=data_list)
     return response_info(msg="2")
