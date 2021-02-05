@@ -147,9 +147,17 @@ def handle_select():
         query_list = []
         select_dict = dict(request.args)
         print("select_字典:", select_dict)
-        for v in select_dict.values():
-            query_list.append(v)
-        result = MT.query.filter(MT.areaName.in_(query_list)).filter(MT.addr.like(f"%{query_list[-1]}%")).all()
+        print("info:", select_dict.get("info"))
+        query_list = select_dict.get('info')
+        replace_list = ['[', ']', '"']
+        for i in replace_list:
+            query_list = query_list.replace(i, '')
+        query_list = query_list.split(",")
+        print('query', query_list)
+
+        like = select_dict.get('like')
+        print('like::::---------0', like)
+        result = MT.query.filter(MT.areaName.in_(query_list)).filter(MT.addr.like(f"%{like}%")).all()
         result_list = []
         for r in result:
             result_list.append(
@@ -266,4 +274,4 @@ def beijing():
 @api.route("/logo")
 def logo():
     if request.method == "GET":
-        return redirect("/static/再芮Logo.png")
+        return redirect("/static/再芮Logo2.png")
