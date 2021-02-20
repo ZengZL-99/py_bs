@@ -1,11 +1,10 @@
-import pymysql
 from flask import Flask
 from app.Api.api import api
 from settings import DevelopmentConfig
-from flask_sqlalchemy import SQLAlchemy
 from app.exts import db
 from app.Api.analysis import analysis
 from app.Api.contrast import contrast
+
 
 def create_app():
     app = Flask(__name__)

@@ -1,12 +1,13 @@
-from flask import Blueprint, make_response, request  # type:request
+import os
+
+from flask import Blueprint, request  # type:request
 from flask_cors import CORS  # type: CORS
 # from app.Model.models import MeiTuan_Move_Info as MT
 from app.Model.models import MeiTuan_Move_Info_V2 as MT
 from app.utils.message import response_info
-from app.Global import CATEGORIES_ID_DATA, AREA_DATA, BAIYUN_AREA
+from app.Global import BAIYUN_AREA
 import pandas as pd  # type: pd
 from app.exts import db
-
 analysis = Blueprint("analysis", __name__)
 CORS(analysis, supports_credentials=True)
 
@@ -160,6 +161,7 @@ def group_avg_score():
         def filter_score(data):
             level = data['score']
             return level
+
         df['score'] = df.apply(filter_score, axis=1)
         group_score = df.groupby(by=['score'])['score'].count().to_dict()
         data_list = []
@@ -172,3 +174,5 @@ def group_avg_score():
         print(data_list)
         return response_info(msg="1", data=data_list)
     return response_info(msg="2")
+
+
