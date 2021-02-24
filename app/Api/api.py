@@ -4,7 +4,7 @@ import requests as req
 from flask import Blueprint, make_response, request, url_for, redirect
 from flask_cors import CORS
 from app.meituan.meituan_move_info import MeiTuan_Move
-from app.Model.models import MeiTuan_Move_Info as MT
+from app.Model.models import MeiTuan_Move_Info_V2 as MT
 from app.exts import db
 from app.Model.models import User  # type:User
 from app.Global import CATEGORIES_ID_DATA, AREA_DATA, BAIYUN_AREA
@@ -157,7 +157,12 @@ def handle_select():
 
         like = select_dict.get('like')
         print('like::::---------0', like)
-        result = MT.query.filter(MT.areaName.in_(query_list)).filter(MT.addr.like(f"%{like}%")).all()
+        if not like:
+            print("like=====None???", like)
+            result = MT.query.filter(MT.areaName.in_(query_list))
+        else:
+            print("like!!===None???", like)
+            result = MT.query.filter(MT.areaName.in_(query_list)).filter(MT.addr.like(f"%{like}%")).all()
         result_list = []
         for r in result:
             result_list.append(

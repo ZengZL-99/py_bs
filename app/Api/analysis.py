@@ -8,6 +8,7 @@ from app.utils.message import response_info
 from app.Global import BAIYUN_AREA
 import pandas as pd  # type: pd
 from app.exts import db
+
 analysis = Blueprint("analysis", __name__)
 CORS(analysis, supports_credentials=True)
 
@@ -17,7 +18,7 @@ CORS(analysis, supports_credentials=True)
 def aly_pie():
     """分析出每个区域"""
     if request.method == "GET":
-        db.create_all()
+        # db.create_all()
         # query_list = ['龙归镇']
         result = MT.query.filter(MT.areaName.in_(BAIYUN_AREA))
         result_list = []
@@ -144,6 +145,7 @@ def aly_phone():
     return response_info(msg="2")
 
 
+# 各个评分段的分布
 @analysis.route("/group_score")
 def group_avg_score():
     if request.method == "GET":
@@ -152,7 +154,7 @@ def group_avg_score():
         for r in result:
             query_list.append(
                 {
-                    "score": round(float(r.avgscore)),
+                    "score": round(float(r.avgscore), 1),
                     "区域名称": r.areaName
                 }
             )
@@ -176,3 +178,85 @@ def group_avg_score():
     return response_info(msg="2")
 
 
+# 汇总接口，减少请求。 减少5000
+@analysis.route("/data_all")
+def data_all():
+    if request.method == "GET":
+        result = MT.query.filter(MT.areaName.in_(BAIYUN_AREA))
+        # ----------------   评分分段 -------------
+        query_list_score = []
+        for r in result:
+            query_list_score.append(
+                {
+                    "score": round(float(r.avgscore), 1),
+                    "区域名称": r.areaName
+                }
+            )
+        df_score = pd.DataFrame(query_list_score)
+
+        def filter_score(data):
+            level = data['score']
+            return level
+
+        df_score['score'] = df_score.apply(filter_score, axis=1)
+        group_score = df_score.groupby(by=['score'])['score'].count().to_dict()
+        score_data_list = []
+        for k, v in group_score.items():
+            if int(k) != 0:
+                score_data_list.append({
+                    'value': int(v),
+                    'name': str(k) + "分"
+                })
+
+        # ----------------   分析每个区域的好评平均数 -------------
+        query_list_mark = []
+        for r in result:
+            query_list_mark.append(
+                {
+                    "好评数": r.markNumbers,
+                    "品牌ID": r.brandId,
+                    "品牌名称": r.brandName,
+                    "区域名称": r.areaName
+                }
+            )
+        df_mark = pd.DataFrame(query_list_mark)
+
+        def filter_mark(row):
+            if row["好评数"] != 0:
+                return row
+
+        df_mark = df_mark.apply(filter_mark, axis=1)
+        group_area_mark = df_mark.groupby(by=["区域名称"])["好评数"].mean().to_dict()
+        mark_data_list = []
+        for k, v in group_area_mark.items():
+            mark_data_list.append({
+                "areaName": k,
+                "meanMark": int(v)
+            })
+
+        # ----------------   分析每个区域的商户总数 pie 图 -------------
+        result_list_area = []
+        for r in result:
+            result_list_area.append(
+                {
+                    "地址": r.addr,
+                    "区域名称": r.areaName
+                }
+            )
+        df_area = pd.DataFrame(result_list_area)
+        df_area = df_area.groupby(by=["区域名称"])["区域名称"].count().to_dict()
+        area_data_list = []
+        for k, v in df_area.items():
+            area_data_list.append({
+                "value": int(v),
+                "name": k
+            })
+        data = [
+            {
+                "alyArea": area_data_list,
+                "alyScore": score_data_list,
+                "alyMark": mark_data_list
+            }
+        ]
+        return response_info(msg="1", data=data)
+    return response_info(msg="2")
