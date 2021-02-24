@@ -164,16 +164,46 @@ def group_avg_score():
             level = data['score']
             return level
 
+        def group_score(data):  # 按 1，2，3，4，5 来进行分类
+            level = round(data['score'], 1)
+            if level < 1:
+                return 0
+            elif level < 2:
+                return "1~2分"
+            elif level < 3:
+                return "2~3分"
+            elif level < 4:
+                return "3~4分"
+            else:
+                return "4~5分"
+
         df['score'] = df.apply(filter_score, axis=1)
-        group_score = df.groupby(by=['score'])['score'].count().to_dict()
-        data_list = []
-        for k, v in group_score.items():
+        df['group_score'] = df.apply(group_score, axis=1)
+
+        score = df.groupby(by=['score'])['score'].count().to_dict()
+        score_list = []
+        for k, v in score.items():
             if int(k) != 0:
-                data_list.append({
+                score_list.append({
                     'value': int(v),
                     'name': str(k) + "分"
                 })
-        print(data_list)
+        group_by_score = df.groupby(by=['group_score'])['score'].count().to_dict()
+        one_score_list = []
+        for k, v in group_by_score.items():
+            if isinstance(k, str):
+                one_score_list.append({
+                    'value': str(v),
+                    "name": str(k)
+                })
+        data_list = [
+            {
+                "score_list": score_list
+            },
+            {
+                "one_score_list": one_score_list
+            }
+        ]
         return response_info(msg="1", data=data_list)
     return response_info(msg="2")
 
