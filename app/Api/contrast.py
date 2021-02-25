@@ -11,6 +11,7 @@ import pandas as pd  # type: pd
 from app.Model.models import QiChaCha as QCC
 from app.exts import db
 import math
+import numpy as np
 
 contrast = Blueprint("contrast", __name__)
 CORS(contrast, supports_credentials=True)
@@ -23,12 +24,18 @@ def single_contrast():
         result = MT.query.filter(MT.areaName.in_(BAIYUN_AREA)).filter(MT.name.like(f"%{query}%"))
         query_list = []
         layer_list = []
+
+        def handle_date(time_stamp):
+            time_array = time.localtime(time_stamp)
+            other_style_time = time.strftime("%Y-%m-%d", time_array)
+            return other_style_time
+
         for r in result:
             query_list.append(
                 {
                     "name": r.name,
                     "addr": r.addr,
-                    "date": r.datetime,
+                    "date": handle_date(int(r.datetime)),
                     "areaName": r.areaName,
                 }
             )
@@ -137,14 +144,15 @@ def upload_com():
 
         def change_time(row):
             date = row['approval_date'].split(" ", 1)
-            time_array = time.strptime(date[0], "%Y-%m-%d")
-            try:
-                timeStamp = int(time.mktime(time_array))
-            except Exception as e:
-                print(e)
-                print(date)
-                return 10
-            return timeStamp * 1000
+            # time_array = time.strptime(date[0], "%Y-%m-%d")
+            # try:
+            #     timeStamp = int(time.mktime(time_array))
+            # except Exception as e:
+            #     print(e)
+            #     print(date)
+            #     return 10
+            # return timeStamp * 1000
+            return date[0]
 
         def change_reg_status(row):
             status = row['reg_status']
@@ -162,11 +170,24 @@ def upload_com():
                     'co_name': r.coName,
                     'social_credit': r.socialCreditCode,
                     'reg_status': r.regStatus,
-                    'approval_date': float(r.approvalDate),
-                    'addr': r.addr
+                    'approval_date': r.approvalDate,
+                    'addr': r.addr,
                 }
             )
         qcc_data = pd.DataFrame(qcc_df)
+
+        def handle_change_time(row):
+            try:
+                time_stamp = int(row['approval_date']) / 1000
+            except Exception as e:
+                print(e)
+                print("row", row['approval_date'])
+                return np.nan
+            time_array = time.localtime(time_stamp)
+            other_style_time = time.strftime("%Y-%m-%d", time_array)
+            return other_style_time
+
+        qcc_data['approval_date'] = qcc_data.apply(handle_change_time, axis=1)
         rs = pd.merge(up_df, qcc_data, how='left', on=['social_credit'])
         rs.fillna("——", inplace=True)
 

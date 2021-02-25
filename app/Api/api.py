@@ -1,3 +1,4 @@
+import time
 from operator import or_
 import json
 import requests as req
@@ -5,6 +6,7 @@ from flask import Blueprint, make_response, request, url_for, redirect
 from flask_cors import CORS
 from app.meituan.meituan_move_info import MeiTuan_Move
 from app.Model.models import MeiTuan_Move_Info_V2 as MT
+from app.Model.models import QiChaCha as QCC
 from app.exts import db
 from app.Model.models import User  # type:User
 from app.Global import CATEGORIES_ID_DATA, AREA_DATA, BAIYUN_AREA
@@ -163,6 +165,12 @@ def handle_select():
         else:
             print("like!!===None???", like)
             result = MT.query.filter(MT.areaName.in_(query_list)).filter(MT.addr.like(f"%{like}%")).all()
+
+        def handle_date(time_stamp):
+            time_array = time.localtime(time_stamp)
+            other_style_time = time.strftime("%Y-%m-%d", time_array)
+            return other_style_time
+
         result_list = []
         for r in result:
             result_list.append(
@@ -171,6 +179,7 @@ def handle_select():
                     "addr": r.addr,
                     "shopUrl": r.shop_url,
                     "poiId": r.poiId,
+                    "time": handle_date(int(r.datetime))
                 }
             )
         return response_info(msg="1", data=result_list)
@@ -280,3 +289,26 @@ def beijing():
 def logo():
     if request.method == "GET":
         return redirect("/static/再芮Logo2.png")
+
+
+@api.route("/handleSelectQcc")
+def handle_select_qcc():
+    name = request.args.get('0')
+    result = QCC.query.filter(QCC.coName == name).first()
+    print(result)
+    if result:
+        data = [
+            {
+                "name": result.coName,
+                "addr": result.addr,
+                "legalPeople": result.legalPeople,
+                "phone": result.phone,
+                "email": result.email,
+                "foundDate": result.foundDate,
+                "regStatus": result.regStatus,
+                "approvalDate": result.approvalDate,
+                "socialCreditCode": result.socialCreditCode
+            }
+        ]
+        return response_info(msg="1", data=data)
+    return response_info(msg="1")
