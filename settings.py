@@ -3,7 +3,7 @@ class Config(object):
     TESTING = False
     USERNAME = 'root'
     PASSWORD = '123456'
-    HOST = 'localhost'
+    HOST = '0.0.0.0'
     PORT = 3306
     DBNAME = 'meituan'
     # SQLALCHEMY_DATABASE_URL = f'mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}'
