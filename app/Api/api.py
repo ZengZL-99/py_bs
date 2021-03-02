@@ -20,6 +20,11 @@ api = Blueprint("api", __name__)
 CORS(api, supports_credentials=True)
 
 
+@api.route("/test")
+def test():
+    return "网站首页"
+
+
 @api.route("/login", methods=["POST"])
 def login():
     info = {
